@@ -1,0 +1,3 @@
+ID_Ambasador,Nickname,Publisher_Name,Email,Parola_Hash,Facultate,Universitate
+AMB001,andreea_f,Nume Prenume Ambasador 1,andreea@example.com,$2b$10$8Kp057JD8Lf3OorktNg.SONqC8E02v/Obgu0IPl5RN9Z9a846iBl6,Cibernetica,ASE Bucuresti
+AMB002,george_p,Nume Prenume Ambasador 2,george@example.com,$2a$10$replaceWithRealBcryptHash2,Marketing,ASE Bucuresti

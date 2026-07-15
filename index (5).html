@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>George Friends · Ambassador Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════
+   TOKENS
+════════════════════════════════════════ */
+:root{
+  --blue:#1A3FCB; --blue-d:#0D2590; --blue-l:#4B6EF5; --blue-xl:#EEF2FF;
+  --gold:#F59E0B; --silver:#94A3B8; --bronze:#CD7C2F;
+  --green:#22C55E; --green-l:#DCFCE7; --red:#EF4444; --red-l:#FEE2E2;
+  --orange:#F97316; --purple:#7C3AED;
+  --bg:#F0F4FF; --card:#fff; --text:#0D1A3A; --muted:#6B7CA4;
+  --border:#E2E8F6; --radius:18px; --radius-sm:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-tap-highlight-color:transparent}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;overflow-x:hidden}
+
+/* ════════════════════════════════════════
+   LOGIN
+════════════════════════════════════════ */
+#login-screen{position:fixed;inset:0;background:linear-gradient(160deg,#0D2590 0%,#1A3FCB 55%,#4B6EF5 100%);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
+#login-screen::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none}
+.login-box{background:rgba(255,255,255,.08);backdrop-filter:blur(24px);border:1.5px solid rgba(255,255,255,.15);border-radius:28px;padding:40px 32px;width:100%;max-width:400px;position:relative;animation:fadeUp .5s ease both}
+.login-logo{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;color:#fff;text-align:center}
+.login-logo span{color:var(--gold)}
+.login-badge{display:inline-block;background:rgba(255,214,0,.15);border:1px solid rgba(255,214,0,.3);color:var(--gold);font-size:11px;font-weight:700;letter-spacing:.08em;padding:3px 10px;border-radius:20px;margin:8px auto 24px;text-align:center;display:block}
+.login-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff;margin-bottom:6px;text-align:center}
+.login-sub{font-size:13px;color:rgba(255,255,255,.55);text-align:center;margin-bottom:28px;line-height:1.5}
+.login-label{display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.07em;text-transform:uppercase;margin-bottom:7px}
+.login-input{width:100%;padding:14px 16px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);border-radius:14px;color:#fff;font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
+.login-input::placeholder{color:rgba(255,255,255,.3)}
+.login-input:focus{border-color:var(--gold)}
+.login-error{font-size:12px;color:#FCA5A5;margin:8px 0 4px;min-height:16px}
+.login-btn{width:100%;margin-top:12px;padding:15px;background:var(--gold);color:#0D1A3A;border:none;border-radius:14px;font-family:'Syne',sans-serif;font-weight:800;font-size:15px;cursor:pointer;letter-spacing:.02em;transition:transform .1s,opacity .2s}
+.login-btn:hover{opacity:.9}
+.login-btn:active{transform:scale(.98)}
+.login-footer{margin-top:20px;font-size:11px;color:rgba(255,255,255,.3);text-align:center}
+
+/* ════════════════════════════════════════
+   APP SHELL
+════════════════════════════════════════ */
+#app{display:none;min-height:100vh;padding-bottom:80px}
+
+/* ════════════════════════════════════════
+   TOP HEADER
+════════════════════════════════════════ */
+.app-header{background:var(--blue-d);padding:16px 18px 14px;position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.header-logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff}
+.header-logo span{color:var(--gold)}
+.header-right{display:flex;align-items:center;gap:8px}
+.header-user{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border-radius:30px;padding:5px 12px 5px 5px;cursor:pointer}
+.header-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.header-name{font-size:12px;font-weight:600;color:#fff;white-space:nowrap}
+.notif-btn{width:34px;height:34px;background:rgba(255,255,255,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;position:relative;flex-shrink:0;border:none}
+.notif-dot{width:7px;height:7px;background:var(--red);border-radius:50%;position:absolute;top:5px;right:5px;border:1.5px solid var(--blue-d)}
+
+/* ════════════════════════════════════════
+   BOTTOM NAV
+════════════════════════════════════════ */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1.5px solid var(--border);z-index:50;display:flex;padding:6px 0 calc(6px + env(safe-area-inset-bottom))}
+.bn-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border:none;background:none;cursor:pointer;color:var(--muted);font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;transition:color .15s;font-family:'Inter',sans-serif}
+.bn-btn .bn-icon{font-size:20px;line-height:1}
+.bn-btn.active{color:var(--blue)}
+.bn-btn.active .bn-icon{filter:drop-shadow(0 2px 4px rgba(26,63,203,.4))}
+
+/* ════════════════════════════════════════
+   PAGES
+════════════════════════════════════════ */
+.page{display:none;padding:16px 16px 10px;animation:fadeUp .3s ease both}
+.page.active{display:block}
+.page-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:4px}
+.page-sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+
+/* ════════════════════════════════════════
+   HERO XP CARD
+════════════════════════════════════════ */
+.hero-card{background:linear-gradient(135deg,#1A3FCB 0%,#0D2590 100%);border-radius:var(--radius);padding:20px;margin-bottom:14px;position:relative;overflow:hidden}
+.hero-card::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:rgba(255,255,255,.06);border-radius:50%}
+.hero-card::after{content:'';position:absolute;bottom:-20px;right:40px;width:80px;height:80px;background:rgba(255,255,255,.04);border-radius:50%}
+.hero-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;color:rgba(255,255,255,.8);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
+.hero-name{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;line-height:1.1}
+.hero-uni{font-size:12px;color:rgba(255,255,255,.55);margin-top:3px;margin-bottom:16px}
+.hero-xp-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:10px}
+.hero-xp-val{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:#fff;line-height:1}
+.hero-xp-lbl{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;margin-bottom:4px}
+.hero-rank-badge{background:var(--gold);border-radius:12px;padding:6px 14px;text-align:center;flex-shrink:0}
+.hero-rank-num{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#0D1A3A;line-height:1}
+.hero-rank-lbl{font-size:9px;font-weight:700;color:rgba(13,26,58,.6);letter-spacing:.06em;text-transform:uppercase}
+.xp-bar-wrap{background:rgba(255,255,255,.15);border-radius:20px;height:8px;overflow:hidden}
+.xp-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),#FDE68A);border-radius:20px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.hero-level-row{display:flex;justify-content:space-between;margin-top:7px}
+.hero-level-lbl{font-size:11px;color:rgba(255,255,255,.5)}
+.hero-level-next{font-size:11px;color:rgba(255,255,255,.5)}
+
+/* ════════════════════════════════════════
+   STAT PILLS (mini cards row)
+════════════════════════════════════════ */
+.stat-pills{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.pill{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:12px 10px;text-align:center;cursor:pointer;transition:transform .15s,box-shadow .15s;position:relative}
+.pill:hover,.pill.open{transform:translateY(-2px);box-shadow:0 4px 16px rgba(26,63,203,.12)}
+.pill.open{border-color:var(--blue)}
+.pill-icon{font-size:18px;margin-bottom:4px}
+.pill-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text);line-height:1}
+.pill-lbl{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-top:2px}
+.pill-arrow{position:absolute;bottom:6px;right:8px;font-size:9px;color:var(--blue);opacity:0;transition:opacity .15s}
+.pill.open .pill-arrow{opacity:1}
+
+/* expand panel */
+.pill-panel{display:none;background:#fff;border:1.5px solid var(--blue);border-radius:14px;padding:16px;margin-bottom:14px;animation:fadeUp .25s ease both}
+.pill-panel.open{display:block}
+.pill-panel-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:12px}
+
+/* XP breakdown */
+.xp-breakdown-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.xp-breakdown-row:last-child{border-bottom:none;font-weight:700;color:var(--blue);font-size:14px}
+
+/* conturi history list */
+.mini-list-item{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.mini-list-item:last-child{border-bottom:none}
+.mini-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.badge-green{background:var(--green-l);color:#166534}
+.badge-red{background:var(--red-l);color:#991B1B}
+.badge-muted{background:#F1F5F9;color:var(--muted)}
+
+/* ════════════════════════════════════════
+   WEEKLY CHALLENGE
+════════════════════════════════════════ */
+.challenge-card{background:linear-gradient(135deg,#7C3AED,#4C1D95);border-radius:var(--radius);padding:18px;margin-bottom:14px;position:relative;overflow:hidden}
+.challenge-card::before{content:'⚡';position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:60px;opacity:.1}
+.challenge-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.challenge-name{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:4px}
+.challenge-desc{font-size:12px;color:rgba(255,255,255,.65);margin-bottom:12px;line-height:1.4}
+.challenge-footer{display:flex;align-items:center;justify-content:space-between}
+.challenge-xp{background:rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:#fff}
+.challenge-deadline{font-size:11px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:4px}
+
+/* ════════════════════════════════════════
+   CARDS
+════════════════════════════════════════ */
+.card{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-hd-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700}
+.card-link{font-size:12px;color:var(--blue);font-weight:600;cursor:pointer}
+
+/* ════════════════════════════════════════
+   MISSIONS
+════════════════════════════════════════ */
+.mission-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.mission-item:last-child{border-bottom:none}
+.m-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.m-body{flex:1;min-width:0}
+.m-name{font-size:13px;font-weight:600}
+.m-prog{font-size:11px;color:var(--muted);margin-top:1px}
+.m-bar{background:var(--border);border-radius:20px;height:5px;margin-top:5px;overflow:hidden}
+.m-bar-fill{height:100%;border-radius:20px;transition:width .8s ease}
+.m-xp{font-family:'Syne',sans-serif;font-size:12px;font-weight:800;flex-shrink:0}
+.m-xp.done{color:var(--green)}
+.m-xp.todo{color:var(--blue)}
+
+/* ════════════════════════════════════════
+   LEADERBOARD MINI (dashboard)
+════════════════════════════════════════ */
+.lb-mini-row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border)}
+.lb-mini-row:last-child{border-bottom:none}
+.lb-mini-row.me{background:var(--blue-xl);border-radius:10px;padding:9px 8px;margin:0 -4px}
+.lb-rank{width:24px;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:var(--muted);text-align:center;flex-shrink:0}
+.lb-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.lb-info{flex:1;min-width:0}
+.lb-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.lb-xp{font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:var(--blue);flex-shrink:0}
+
+/* ════════════════════════════════════════
+   CLASAMENT PAGE — TABS
+════════════════════════════════════════ */
+.cls-tabs{display:flex;gap:4px;background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:4px;margin-bottom:16px}
+.cls-tab{flex:1;padding:9px 6px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .2s;font-family:'Inter',sans-serif;text-align:center;white-space:nowrap}
+.cls-tab.active{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(26,63,203,.3)}
+
+/* ════════════════════════════════════════
+   PODIUM
+════════════════════════════════════════ */
+.podium-wrap{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-bottom:16px;padding:0 4px}
+.pod-slot{display:flex;flex-direction:column;align-items:center;flex:1;max-width:120px}
+.pod-av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-family:'Syne',sans-serif;position:relative;flex-shrink:0;margin-bottom:6px}
+.pod-slot.p1 .pod-av{width:60px;height:60px;font-size:22px;border:3px solid var(--gold);box-shadow:0 0 0 4px rgba(245,158,11,.2)}
+.pod-slot.p2 .pod-av{width:48px;height:48px;font-size:18px;border:2.5px solid var(--silver)}
+.pod-slot.p3 .pod-av{width:44px;height:44px;font-size:16px;border:2.5px solid var(--bronze)}
+.pod-crown{position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:14px;animation:float 2.5s ease-in-out infinite}
+.pod-name{font-family:'Syne',sans-serif;font-size:11px;font-weight:800;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;margin-bottom:1px}
+.pod-slot.p1 .pod-name{font-size:12px}
+.pod-sub{font-size:9px;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;margin-bottom:2px}
+.pod-xp{font-family:'Syne',sans-serif;font-size:11px;font-weight:800;color:var(--blue);margin-bottom:1px}
+.pod-conturi{font-size:9px;color:var(--muted)}
+.pod-block{width:100%;border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900}
+.pod-slot.p1 .pod-block{height:72px;background:linear-gradient(180deg,var(--gold),#D97706)}
+.pod-slot.p2 .pod-block{height:52px;background:linear-gradient(180deg,var(--silver),#64748B)}
+.pod-slot.p3 .pod-block{height:40px;background:linear-gradient(180deg,var(--bronze),#92400E)}
+
+/* ════════════════════════════════════════
+   CLASAMENT LIST
+════════════════════════════════════════ */
+.cls-list-card{padding:0;overflow:hidden}
+.cls-row{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border);transition:background .1s}
+.cls-row:last-child{border-bottom:none}
+.cls-row.me{background:var(--blue-xl)}
+.cls-row:hover{background:#F8FAFF}
+.cls-rank{width:26px;font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:var(--muted);text-align:center;flex-shrink:0}
+.cls-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.cls-info{flex:1;min-width:0}
+.cls-name{font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cls-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.cls-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0}
+.cls-xp{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:var(--blue)}
+.cls-conturi{font-size:10px;color:var(--muted)}
+.me-tag{font-size:9px;font-weight:700;background:var(--blue);color:#fff;padding:1px 6px;border-radius:20px;letter-spacing:.04em}
+
+/* ════════════════════════════════════════
+   ADMIN UPLOAD
+════════════════════════════════════════ */
+.admin-upload-section{display:none}
+.admin-upload-section.visible{display:block}
+.upload-zone{border:2px dashed var(--blue-l);border-radius:var(--radius);padding:28px 20px;text-align:center;cursor:pointer;transition:background .2s,border-color .2s;margin-bottom:14px}
+.upload-zone:hover,.upload-zone.drag-over{background:var(--blue-xl);border-color:var(--blue)}
+.upload-icon{font-size:32px;margin-bottom:8px}
+.upload-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:4px}
+.upload-sub{font-size:12px;color:var(--muted)}
+.upload-status{display:none;background:var(--green-l);border:1.5px solid var(--green);border-radius:12px;padding:12px 16px;font-size:13px;font-weight:600;color:#166534;margin-bottom:14px;text-align:center}
+#csv-file-input{display:none}
+
+/* XP table */
+.xp-table-wrap{overflow-x:auto;border-radius:var(--radius-sm);border:1.5px solid var(--border)}
+.xp-table{width:100%;border-collapse:collapse;font-size:12px}
+.xp-table th{background:var(--blue-d);color:rgba(255,255,255,.8);font-weight:700;padding:10px 12px;text-align:left;white-space:nowrap;letter-spacing:.04em}
+.xp-table td{padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+.xp-table tr:last-child td{border-bottom:none}
+.xp-table tr.me-row td{background:var(--blue-xl)}
+.xp-table tr:hover td{background:#F8FAFF}
+
+/* ════════════════════════════════════════
+   PROFIL PAGE
+════════════════════════════════════════ */
+.profile-hero{background:linear-gradient(135deg,var(--blue) 0%,var(--blue-d) 100%);border-radius:var(--radius);padding:20px;margin-bottom:14px;text-align:center}
+.profile-av{width:64px;height:64px;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#fff;border:3px solid var(--gold)}
+.profile-nickname{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff}
+.profile-level{font-size:12px;color:rgba(255,255,255,.6);margin-top:2px}
+.profile-stats-row{display:flex;justify-content:center;gap:20px;margin-top:14px}
+.profile-stat{text-align:center}
+.profile-stat-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff}
+.profile-stat-lbl{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.05em;text-transform:uppercase}
+.info-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.info-row:last-child{border-bottom:none}
+.info-label{color:var(--muted);font-weight:500}
+.info-value{font-weight:600;text-align:right}
+
+/* ════════════════════════════════════════
+   ANIMATIONS
+════════════════════════════════════════ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes float{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-4px)}}
+@keyframes podRise{from{opacity:0;transform:scaleY(0);transform-origin:bottom}to{opacity:1;transform:scaleY(1)}}
+@keyframes podFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.pod-block{animation:podRise .5s cubic-bezier(.34,1.56,.64,1) both}
+.pod-slot{animation:podFade .4s ease both}
+.pod-slot.p1{animation-delay:.05s} .pod-slot.p1 .pod-block{animation-delay:.1s}
+.pod-slot.p2{animation-delay:.15s} .pod-slot.p2 .pod-block{animation-delay:.2s}
+.pod-slot.p3{animation-delay:.25s} .pod-slot.p3 .pod-block{animation-delay:.3s}
+
+/* ════════════════════════════════════════
+   RESPONSIVE
+════════════════════════════════════════ */
+@media(min-width:600px){
+  #app{max-width:500px;margin:0 auto}
+  .app-header{max-width:500px;left:50%;transform:translateX(-50%);width:100%}
+  .bottom-nav{max-width:500px;left:50%;transform:translateX(-50%)}
+}
+@media(max-width:380px){
+  .hero-name{font-size:22px}
+  .hero-xp-val{font-size:30px}
+  .pill-val{font-size:18px}
+  .cls-tab{font-size:10px;padding:8px 3px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     LOGIN
+══════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">George Friends<span>.</span></div>
+    <div class="login-badge">🏆 Ambassador Program</div>
+    <div class="login-title">Bine ai revenit!</div>
+    <div class="login-sub">Intră în contul tău pentru a vedea XP-ul, clasamentul și provocările săptămânale.</div>
+    <label class="login-label" for="loginEmail">Email</label>
+    <input class="login-input" type="email" id="loginEmail" placeholder="adresa@email.com" autocomplete="email" style="margin-bottom:14px">
+    <label class="login-label" for="loginPassword">Parolă</label>
+    <input class="login-input" type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+    <div class="login-error" id="loginError"></div>
+    <button class="login-btn" onclick="doLogin()">Intră în cont →</button>
+    <div class="login-footer">🔒 Acces securizat prin email și parolă</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     APP
+══════════════════════════════════════ -->
+<div id="app">
+
+  <!-- HEADER -->
+  <div class="app-header">
+    <div class="header-logo">George Friends<span>.</span></div>
+    <div class="header-right">
+      <button class="notif-btn" onclick="alert('Notificări în curând!')">🔔<div class="notif-dot"></div></button>
+      <div class="header-user" onclick="goTo('profil')">
+        <div class="header-av" id="headerAv" style="background:var(--blue-l)">?</div>
+        <div class="header-name" id="headerName">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ PAGE: DASHBOARD ════ -->
+  <div class="page active" id="page-dashboard">
+
+    <div style="padding:16px 16px 0">
+
+      <!-- Hero XP Card -->
+      <div class="hero-card">
+        <div class="hero-chip">⚡ Ambassador activ</div>
+        <div class="hero-name" id="heroName">—</div>
+        <div class="hero-uni" id="heroUni">—</div>
+        <div class="hero-xp-row">
+          <div>
+            <div class="hero-xp-lbl">XP TOTAL</div>
+            <div class="hero-xp-val" id="heroXP">0</div>
+          </div>
+          <div class="hero-rank-badge">
+            <div class="hero-rank-num" id="heroRank">#—</div>
+            <div class="hero-rank-lbl">Național</div>
+          </div>
+        </div>
+        <div class="xp-bar-wrap"><div class="xp-bar-fill" id="xpBarFill" style="width:0%"></div></div>
+        <div class="hero-level-row">
+          <div class="hero-level-lbl" id="heroLevelLbl">Level 1</div>
+          <div class="hero-level-next" id="heroLevelNext">— XP pentru Level 2</div>
+        </div>
+      </div>
+
+      <!-- Pill Stats -->
+      <div class="stat-pills">
+        <div class="pill" id="pill-conturi" onclick="togglePill('conturi')">
+          <div class="pill-icon">📂</div>
+          <div class="pill-val" id="pillConturi">0</div>
+          <div class="pill-lbl">Conturi</div>
+          <div class="pill-arrow">▾</div>
+        </div>
+        <div class="pill" id="pill-referrals" onclick="togglePill('referrals')">
+          <div class="pill-icon">👥</div>
+          <div class="pill-val" id="pillReferrals">0</div>
+          <div class="pill-lbl">Referrals</div>
+          <div class="pill-arrow">▾</div>
+        </div>
+        <div class="pill" id="pill-comision" onclick="togglePill('comision')">
+          <div class="pill-icon">💰</div>
+          <div class="pill-val" id="pillComision">0</div>
+          <div class="pill-lbl">RON</div>
+          <div class="pill-arrow">▾</div>
+        </div>
+      </div>
+
+      <!-- Pill: conturi panel -->
+      <div class="pill-panel" id="panel-conturi">
+        <div class="pill-panel-title">📂 Detalii XP din Conturi</div>
+        <div id="xpBreakdown"></div>
+      </div>
+      <!-- Pill: referrals panel -->
+      <div class="pill-panel" id="panel-referrals">
+        <div class="pill-panel-title">👥 Referrals</div>
+        <div id="referralsDetail"></div>
+      </div>
+      <!-- Pill: comision panel -->
+      <div class="pill-panel" id="panel-comision">
+        <div class="pill-panel-title">💰 Comision</div>
+        <div id="comisionDetail"></div>
+      </div>
+
+      <!-- Weekly Challenge -->
+      <div class="challenge-card">
+        <div class="challenge-label">🔥 Challenge săptămânal</div>
+        <div class="challenge-name" id="challengeName">Top Growth Sprint</div>
+        <div class="challenge-desc" id="challengeDesc">Adaugă cele mai multe conturi noi săptămâna asta și câștigă bonus XP!</div>
+        <div class="challenge-footer">
+          <div class="challenge-xp" id="challengeXP">+100 XP</div>
+          <div class="challenge-deadline">⏱ <span id="challengeDeadline">Expiră duminică</span></div>
+        </div>
+      </div>
+
+      <!-- Misiuni zilnice -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-title">⚡ Misiuni Zilnice</div>
+          <div style="font-size:11px;color:var(--muted)" id="missionTimer">—</div>
+        </div>
+        <div id="missionsBody"></div>
+      </div>
+
+      <!-- Top Universități mini -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-title">🎓 Top Universități</div>
+          <div class="card-link" onclick="goTo('clasament');setClsTab('universitati')">Vezi tot →</div>
+        </div>
+        <div id="uniMini"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════ PAGE: CLASAMENT ════ -->
+  <div class="page" id="page-clasament">
+    <div style="padding:16px 16px 0">
+      <div class="page-title">🏆 Clasamente</div>
+      <div class="page-sub">Competiție live · actualizat din CSV</div>
+
+      <div class="cls-tabs">
+        <button class="cls-tab active" id="clsTab1" onclick="setClsTab('studenti')">👤 Studenți</button>
+        <button class="cls-tab" id="clsTab2" onclick="setClsTab('universitati')">🎓 Univ.</button>
+        <button class="cls-tab" id="clsTab3" onclick="setClsTab('facultati')">🏫 Facultăți</button>
+      </div>
+
+      <div id="cls-studenti-view">
+        <div id="podium-studenti" class="podium-wrap"></div>
+        <div class="card cls-list-card"><div id="list-studenti"></div></div>
+      </div>
+      <div id="cls-universitati-view" style="display:none">
+        <div id="podium-universitati" class="podium-wrap"></div>
+        <div class="card cls-list-card"><div id="list-universitati"></div></div>
+      </div>
+      <div id="cls-facultati-view" style="display:none">
+        <div id="podium-facultati" class="podium-wrap"></div>
+        <div class="card cls-list-card"><div id="list-facultati"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ PAGE: PROFIL ════ -->
+  <div class="page" id="page-profil">
+    <div style="padding:16px 16px 0">
+      <div class="page-title">👤 Profilul meu</div>
+      <div class="page-sub">Statisticile tale live</div>
+
+      <div class="profile-hero">
+        <div class="profile-av" id="profileAv">?</div>
+        <div class="profile-nickname" id="profileNick">—</div>
+        <div class="profile-level" id="profileLevel">—</div>
+        <div class="profile-stats-row">
+          <div class="profile-stat">
+            <div class="profile-stat-val" id="profXP">0</div>
+            <div class="profile-stat-lbl">XP</div>
+          </div>
+          <div class="profile-stat">
+            <div class="profile-stat-val" id="profConturi">0</div>
+            <div class="profile-stat-lbl">Conturi</div>
+          </div>
+          <div class="profile-stat">
+            <div class="profile-stat-val" id="profRank">#—</div>
+            <div class="profile-stat-lbl">Rank</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-title">📋 Detalii cont</div></div>
+        <div id="profileDetails"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-title">⚡ Breakdown XP</div></div>
+        <div id="profileXPBreakdown"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ PAGE: ADMIN ════ -->
+  <div class="page" id="page-admin">
+    <div style="padding:16px 16px 0">
+      <div class="page-title">⚙️ Admin Panel</div>
+      <div class="page-sub">Vizibil doar pentru administratori</div>
+
+      <!-- Upload section — only for admin -->
+      <div class="admin-upload-section visible" id="adminUploadSection">
+        <div class="card">
+          <div class="card-hd"><div class="card-hd-title">📤 Upload CSV Ambasadori</div></div>
+          <div class="upload-zone" id="csvDropZone">
+            <div class="upload-icon">📂</div>
+            <div class="upload-title">Trage CSV-ul aici sau click pentru upload</div>
+            <div class="upload-sub">Acceptat: sales.csv (raport CJ) · Max 5MB</div>
+          </div>
+          <input type="file" id="csv-file-input" accept=".csv">
+          <div class="upload-status" id="uploadStatus"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-hd-title">📊 Tabel XP Calculat</div>
+            <div style="font-size:11px;color:var(--muted)" id="ambassadorCount">0 ambasadori</div>
+          </div>
+          <div class="xp-table-wrap">
+            <table class="xp-table">
+              <thead>
+                <tr>
+                  <th>Rank</th><th>Nickname</th><th>Tip</th><th>Facultate</th>
+                  <th>Conturi</th><th>XP Conturi</th>
+                  <th>Ref XP</th><th>Bonus XP</th><th>Total XP</th>
+                </tr>
+              </thead>
+              <tbody id="xpTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="bn-btn active" id="bn-dashboard" onclick="goTo('dashboard')">
+    <span class="bn-icon">🏠</span>Home
+  </button>
+  <button class="bn-btn" id="bn-clasament" onclick="goTo('clasament')">
+    <span class="bn-icon">🏆</span>Top
+  </button>
+  <button class="bn-btn" id="bn-profil" onclick="goTo('profil')">
+    <span class="bn-icon">👤</span>Profil
+  </button>
+  <button class="bn-btn" id="bn-admin" onclick="goTo('admin')" style="display:none">
+    <span class="bn-icon">⚙️</span>Admin
+  </button>
+</nav>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════
+const ADMIN_EMAILS = ['admin@george.ro', 'george.admin@bcr.ro'];
+const AVATAR_COLORS = ['#1A3FCB','#7C3AED','#DC2626','#D97706','#059669',
+  '#0891B2','#DB2777','#65A30D','#EA580C','#6D28D9','#0369A1','#9333EA',
+  '#B45309','#15803D','#C026D3','#BE123C','#0E7490','#4338CA'];
+
+const LEVEL_THRESHOLDS = [0, 500, 1500, 3000, 6000, 10000, 20000];
+const LEVEL_NAMES = ['Rookie','Affiliate','Ambassador','Elite','Legend','GOAT'];
+
+const WEEKLY_CHALLENGE = {
+  name: 'Top Growth Sprint',
+  desc: 'Adaugă cele mai multe conturi noi săptămâna asta și câștigă +100 XP bonus pentru creșterea maximă!',
+  xp: 100,
+  deadline: 'Duminică, 15 Iun'
+};
+
+const MISSIONS = [
+  { icon:'⚡', bg:'#EFF4FF', name:'Joacă 3 dueluri', curr:3, max:3, xp:100 },
+  { icon:'👥', bg:'#F0FDF4', name:'Adu un prieten',  curr:1, max:1, xp:250 },
+  { icon:'🎯', bg:'#FFF7ED', name:'Câștigă un battle', curr:0, max:1, xp:150 },
+  { icon:'⭐', bg:'#FAF5FF', name:'Intră în top 10', curr:0, max:1, xp:200 },
+];
+
+// ═══════════════════════════════════════════════════════
+// XP ENGINE  (GLOBAL TIER — not progressive)
+// ═══════════════════════════════════════════════════════
+function calcAccountsXP(n) {
+  n = parseInt(n) || 0;
+  if (n <= 0)  return 0;
+  if (n <= 10) return n * 100;
+  if (n <= 20) return n * 120;
+  if (n <= 30) return n * 150;
+  return n * 200;
+}
+
+function getLevel(xp) {
+  let lvl = 0;
+  for (let i = 0; i < LEVEL_THRESHOLDS.length - 1; i++) {
+    if (xp >= LEVEL_THRESHOLDS[i]) lvl = i;
+  }
+  return lvl;
+}
+
+function calcFullXP(amb, allAmbs, weeklyTopId) {
+  let xp = calcAccountsXP(amb.Total_Conturi_Generate);
+  // Referral bonus: +500 XP per ambassador referred
+  const referrals = allAmbs.filter(a =>
+    (a.Ambasador_Permanent_Supervizor||'').trim() === (amb.ID_Ambasador||'').trim()
+  ).length;
+  xp += referrals * 500;
+  // Highest weekly growth bonus
+  if (amb.ID_Ambasador === weeklyTopId) xp += 100;
+  return { xp, referrals };
+}
+
+function assignWeeklyRankBonus(sorted) {
+  // sorted by XP desc — assign weekly leaderboard rewards
+  const bonuses = [250,200,150,50,50,50,50,50,50,50];
+  sorted.forEach((a, i) => {
+    a._weeklyBonus = bonuses[i] || 0;
+    a._xp += a._weeklyBonus;
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// CSV PARSER
+// ═══════════════════════════════════════════════════════
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const headers = lines[0].split(',').map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const vals = line.split(',');
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = (vals[i] || '').trim());
+    return obj;
+  });
+}
+
+// Cheia de corelare Publisher Name: normalizată (lowercase + trim)
+// ca să nu pice legătura din cauza unei litere mari sau a unui spațiu în plus.
+function pubKey(name) { return (name || '').trim().toLowerCase(); }
+
+// Numără câte comenzi/lead-uri are fiecare Publisher Name în sales.csv
+function aggregateSales(salesRows) {
+  const map = {};
+  salesRows.forEach(r => {
+    const key = pubKey(r['Publisher Name']);
+    if (!key) return;
+    map[key] = (map[key] || 0) + 1;
+  });
+  return map;
+}
+
+// Combină ambassadors.csv + members.csv într-o singură listă de "persoane",
+// fiecare cu Total_Conturi_Generate calculat din sales.csv
+function mergePeople(ambRows, memRows, salesMap) {
+  const people = [];
+
+  ambRows.forEach(a => {
+    people.push({
+      ID_Ambasador: a.ID_Ambasador,
+      Nickname: a.Nickname,
+      Publisher_Name: a.Publisher_Name,
+      Email: a.Email,
+      Parola_Hash: a.Parola_Hash,
+      Facultate: a.Facultate,
+      Universitate: a.Universitate,
+      Tip: 'Ambasador',
+      Ambasador_Permanent_Supervizor: '',
+      Total_Conturi_Generate: salesMap[pubKey(a.Publisher_Name)] || 0
+    });
+  });
+
+  memRows.forEach(m => {
+    people.push({
+      ID_Ambasador: m.ID_Ambasador,
+      Nickname: m.Nickname,
+      Publisher_Name: m.Publisher_Name,
+      Email: '',
+      Parola_Hash: '',
+      Facultate: m.Facultate,
+      Universitate: m.Universitate,
+      Tip: 'Membru',
+      Ambasador_Permanent_Supervizor: m.Ambasador,
+      Total_Conturi_Generate: salesMap[pubKey(m.Publisher_Name)] || 0
+    });
+  });
+
+  return people.filter(p => p.ID_Ambasador);
+}
+
+function processAmbassadors(rows) {
+  // Arhitectura: allRows = toti (ambasadori + membri), leaderboardRows = doar Ambasadori
+  const allRows         = rows;
+  const leaderboardRows = rows.filter(a => (a.Tip||'').trim() === 'Ambasador');
+
+  // PASS 1: initializare campuri + XP de baza pentru TOTI
+  allRows.forEach((a, i) => {
+    a._isPermanent      = (a.Tip||'').trim() === 'Ambasador';
+    a._color            = AVATAR_COLORS[i % AVATAR_COLORS.length];
+    a._xpBase           = calcAccountsXP(a.Total_Conturi_Generate);
+    a._referrals        = 0;
+    a._refXP            = 0;
+    a._weeklyBonus      = 0;
+    a._affiliateCount   = 0;
+    a._affiliateConturi = 0;
+    a._affiliateXP      = 0;
+    a._xp               = a._xpBase;
+    a._rank             = null;
+  });
+
+  // PASS 2: calculeaza reteaua fiecarui Permanent
+  // Orice rand cu Ambasador_Permanent_Supervizor setat contribuie la supervizor
+  allRows.forEach(a => {
+    const supId = (a.Ambasador_Permanent_Supervizor||'').trim();
+    if (!supId) return;
+    const sup = allRows.find(s => (s.ID_Ambasador||'').trim() === supId);
+    if (!sup) return;
+    sup._referrals        += 1;
+    // Referral XP (+500) doar daca cel recrutat este si el Ambasador
+    sup._refXP            += a._isPermanent ? 500 : 0;
+    // Retea afiliati: contribuie toti (inclusiv Membri)
+    sup._affiliateCount   += 1;
+    sup._affiliateConturi += parseInt(a.Total_Conturi_Generate) || 0;
+    sup._affiliateXP      += a._xpBase;
+  });
+
+  // PASS 3: XP total Permanenti = propriu + refXP + affiliateXP
+  leaderboardRows.forEach(a => {
+    a._totalConturi = (parseInt(a.Total_Conturi_Generate)||0) + a._affiliateConturi;
+    a._xp = a._xpBase + a._refXP + a._affiliateXP;
+  });
+
+  // Weekly top grower = Permanentul cu cele mai multe conturi totale
+  const weeklyTopId = leaderboardRows.length
+    ? leaderboardRows.reduce((best, a) =>
+        a._totalConturi > best._totalConturi ? a : best
+      , leaderboardRows[0])?.ID_Ambasador
+    : null;
+  if (weeklyTopId) {
+    const top = leaderboardRows.find(a => a.ID_Ambasador === weeklyTopId);
+    if (top) top._xp += 100;
+  }
+
+  // Membrii: XP total = propriu (fara affiliate, fara weekly)
+  allRows.filter(a => !a._isPermanent).forEach(a => {
+    a._xp           = a._xpBase + a._refXP;
+    a._totalConturi = parseInt(a.Total_Conturi_Generate)||0;
+  });
+
+  // PASS 4: sort Permanenti, weekly rank bonuses, rank final
+  leaderboardRows.sort((a, b) => b._xp - a._xp);
+  assignWeeklyRankBonus(leaderboardRows);
+  leaderboardRows.sort((a, b) => b._xp - a._xp);
+  leaderboardRows.forEach((a, i) => { a._rank = i + 1; });
+
+  processAmbassadors._allRows         = allRows;
+  processAmbassadors._leaderboardRows = leaderboardRows;
+
+  return allRows;
+}
+
+function buildUniData(ambassadors) {
+  // Foloseste XP-ul PROPRIU al fiecarei persoane (nu totalul, care la ambasadori
+  // include si bonusul de echipa) — altfel bonusul de echipa s-ar aduna la
+  // universitatea ambasadorului in loc de universitatile reale ale membrilor.
+  const allRows = processAmbassadors._allRows || ambassadors;
+  const map = {};
+  allRows.forEach(a => {
+    const k = a.Universitate || 'Necunoscută';
+    if (!map[k]) map[k] = { name:k, xp:0, conturi:0 };
+    map[k].xp      += a._xpBase;
+    map[k].conturi += parseInt(a.Total_Conturi_Generate) || 0;
+  });
+  return Object.values(map).sort((a,b) => b.xp - a.xp)
+    .map((u,i) => ({ ...u, color: AVATAR_COLORS[i % AVATAR_COLORS.length] }));
+}
+
+function buildFacData(ambassadors) {
+  // Idem: XP propriu per persoana, atribuit facultatii ei reale.
+  const allRows = processAmbassadors._allRows || ambassadors;
+  const map = {};
+  allRows.forEach(a => {
+    const k = `${a.Facultate}|${a.Universitate}`;
+    if (!map[k]) map[k] = { name:a.Facultate, uni:a.Universitate, xp:0, conturi:0 };
+    map[k].xp      += a._xpBase;
+    map[k].conturi += parseInt(a.Total_Conturi_Generate) || 0;
+  });
+  return Object.values(map).sort((a,b) => b.xp - a.xp)
+    .map((f,i) => ({ ...f, color: AVATAR_COLORS[i % AVATAR_COLORS.length] }));
+}
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+const STATE = {
+  ambassadors: [],
+  universities: [],
+  faculties: [],
+  loggedEmail: null,
+  isAdmin: false,
+  me: null,
+};
+
+const fmt = n => Number(n).toLocaleString('ro-RO');
+const ini = name => (name||'?').charAt(0).toUpperCase();
+
+// ═══════════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════════
+function doLogin() {
+  const emailEl = document.getElementById('loginEmail');
+  const passEl  = document.getElementById('loginPassword');
+  const errEl   = document.getElementById('loginError');
+  const email   = emailEl.value.trim().toLowerCase();
+  const pass    = passEl.value;
+
+  if (!email) { errEl.textContent = '⚠️ Introdu adresa de email.'; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errEl.textContent = '⚠️ Email invalid.'; return; }
+  if (!pass)  { errEl.textContent = '⚠️ Introdu parola.'; return; }
+
+  // Check against ambassador list (membrii nu au Email/cont — nu se pot loga)
+  const found = STATE.ambassadors.find(a => a.Email && a.Email.toLowerCase() === email);
+  const isAdmin = ADMIN_EMAILS.includes(email);
+
+  if (!found && !isAdmin) {
+    errEl.textContent = '❌ Adresa nu este înregistrată în program.';
+    return;
+  }
+
+  // Password check for ambassadors (admins nu au încă parolă în CSV — de discutat)
+  if (found && !isAdmin) {
+    const hash = found.Parola_Hash || '';
+    const ok = hash && window.dcodeIO && dcodeIO.bcrypt
+      ? dcodeIO.bcrypt.compareSync(pass, hash)
+      : (typeof bcrypt !== 'undefined' && bcrypt.compareSync(pass, hash));
+    if (!ok) { errEl.textContent = '❌ Parolă incorectă.'; return; }
+  }
+
+  STATE.loggedEmail = email;
+  STATE.isAdmin     = isAdmin;
+  STATE.me          = found || null;
+
+  // Fade out login
+  const ls = document.getElementById('login-screen');
+  ls.style.transition = 'opacity .45s ease';
+  ls.style.opacity = '0';
+  setTimeout(() => {
+    ls.style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('bottomNav').style.display = 'flex';
+    if (isAdmin) document.getElementById('bn-admin').style.display = 'flex';
+    renderAll();
+  }, 450);
+}
+
+document.getElementById('loginEmail')
+  .addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// ═══════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════
+function renderAll() {
+  renderHero();
+  renderPills();
+  renderMissions();
+  renderWeeklyChallenge();
+  renderUniMini();
+  renderLeaderboards();
+  renderProfile();
+  renderAdminTable();
+}
+
+function renderHero() {
+  const me = STATE.me;
+  if (!me) {
+    document.getElementById('heroName').textContent  = STATE.isAdmin ? 'Admin' : '—';
+    document.getElementById('heroUni').textContent   = STATE.isAdmin ? 'George · Admin Panel' : '—';
+    document.getElementById('heroXP').textContent    = '—';
+    document.getElementById('heroRank').textContent  = '#—';
+    document.getElementById('headerName').textContent= 'Admin';
+    document.getElementById('headerAv').textContent  = 'A';
+    return;
+  }
+  const xp   = me._xp;
+  const lvl  = getLevel(xp);
+  const next = LEVEL_THRESHOLDS[lvl+1] || LEVEL_THRESHOLDS[lvl]*2;
+  const prev = LEVEL_THRESHOLDS[lvl] || 0;
+  const pct  = Math.min(100, Math.round((xp - prev) / (next - prev) * 100));
+
+  document.getElementById('heroName').textContent     = me.Nickname || me.ID_Ambasador;
+  document.getElementById('heroUni').textContent      = `${me.Universitate} · ${me.Facultate}`;
+  document.getElementById('heroXP').textContent       = fmt(xp);
+  // Temporaries don't have a rank
+  const rankBadge = document.querySelector('.hero-rank-badge');
+  if (me._isPermanent) {
+    document.getElementById('heroRank').textContent = `#${me._rank}`;
+    if (rankBadge) rankBadge.style.display = '';
+  } else {
+    document.getElementById('heroRank').textContent = '—';
+    if (rankBadge) rankBadge.style.display = 'none';
+  }
+  document.getElementById('heroLevelLbl').textContent = `Level ${lvl+1} · ${LEVEL_NAMES[lvl]}`;
+  document.getElementById('heroLevelNext').textContent= `${fmt(next - xp)} XP pentru Level ${lvl+2}`;
+  document.getElementById('headerName').textContent   = me.Nickname || me.ID_Ambasador;
+  document.getElementById('headerAv').textContent     = ini(me.Nickname || me.ID_Ambasador);
+  document.getElementById('headerAv').style.background= me._color;
+
+  setTimeout(() => {
+    document.getElementById('xpBarFill').style.width = pct + '%';
+  }, 200);
+}
+
+function renderPills() {
+  const me = STATE.me;
+  if (!me) return;
+
+  // Pill counts — pentru Permanenti includem si reteaua
+  const totalConturi = me._isPermanent
+    ? (parseInt(me.Total_Conturi_Generate)||0) + me._affiliateConturi
+    : parseInt(me.Total_Conturi_Generate)||0;
+
+  document.getElementById('pillConturi').textContent   = totalConturi;
+  document.getElementById('pillReferrals').textContent = me._affiliateCount || me._referrals;
+  document.getElementById('pillComision').textContent  = fmt(parseInt(me.Comision_Total_RON)||0);
+
+  // XP breakdown
+  const affiliateLine = me._isPermanent && me._affiliateCount > 0
+    ? `<div class="xp-breakdown-row"><span>🔗 XP retea afiliati (${me._affiliateCount} afiliati · ${me._affiliateConturi} conturi)</span><span>+${fmt(me._affiliateXP)} XP</span></div>`
+    : '';
+  const refLine = me._refXP > 0
+    ? `<div class="xp-breakdown-row"><span>👥 Referrals Permanenti (${me._referrals})</span><span>+${fmt(me._refXP)} XP</span></div>`
+    : '';
+  const rankStr = me._isPermanent ? `rank #${me._rank}` : 'N/A';
+  document.getElementById('xpBreakdown').innerHTML = `
+    <div class="xp-breakdown-row"><span>📂 XP conturi proprii (${me.Total_Conturi_Generate})</span><span>${fmt(me._xpBase)} XP</span></div>
+    ${affiliateLine}
+    ${refLine}
+    <div class="xp-breakdown-row"><span>🏆 Bonus saptamanal (${rankStr})</span><span>+${fmt(me._weeklyBonus)} XP</span></div>
+    <div class="xp-breakdown-row"><span>⚡ TOTAL XP</span><span>${fmt(me._xp)} XP</span></div>`;
+
+  // Referrals/Afiliati detail — toti cei cu Ambasador_Permanent_Supervizor === me
+  const refs = STATE.ambassadors.filter(a =>
+    (a.Ambasador_Permanent_Supervizor||'').trim() === (me.ID_Ambasador||'').trim()
+  );
+  document.getElementById('referralsDetail').innerHTML = refs.length
+    ? refs.map(r => {
+        const badge = r._isPermanent
+          ? '<span class="mini-badge badge-green">Permanent +500 XP</span>'
+          : '<span class="mini-badge badge-muted">Temporar</span>';
+        return `<div class="mini-list-item">
+          <div>
+            <div style="font-weight:600">${r.Nickname||r.ID_Ambasador}</div>
+            <div style="font-size:10px;color:var(--muted)">${r.Universitate} · ${r.Total_Conturi_Generate} conturi · ${fmt(r._xpBase)} XP</div>
+          </div>
+          ${badge}</div>`;
+      }).join('')
+    : '<div style="color:var(--muted);font-size:13px;padding:10px 0">Niciun referral inca. Invita un coleg!</div>';
+
+  // Comision
+  document.getElementById('comisionDetail').innerHTML = `
+    <div class="xp-breakdown-row"><span>💰 Comision total</span><span>${fmt(parseInt(me.Comision_Total_RON)||0)} RON</span></div>
+    <div class="xp-breakdown-row"><span>📂 Conturi generate</span><span>${me.Total_Conturi_Generate}</span></div>
+    <div class="xp-breakdown-row"><span>📊 Medie per cont</span><span>${me.Total_Conturi_Generate > 0 ? fmt(Math.round((parseInt(me.Comision_Total_RON)||0) / parseInt(me.Total_Conturi_Generate))) : 0} RON</span></div>`;
+}
+
+const PILL_IDS = ['conturi','referrals','comision'];
+function togglePill(id) {
+  const isOpen = document.getElementById('panel-'+id).classList.contains('open');
+  PILL_IDS.forEach(p => {
+    document.getElementById('panel-'+p).classList.remove('open');
+    document.getElementById('pill-'+p).classList.remove('open');
+  });
+  if (!isOpen) {
+    document.getElementById('panel-'+id).classList.add('open');
+    document.getElementById('pill-'+id).classList.add('open');
+  }
+}
+
+function renderMissions() {
+  document.getElementById('missionsBody').innerHTML = MISSIONS.map(m => {
+    const done = m.curr >= m.max;
+    const pct  = Math.min(100, Math.round(m.curr/m.max*100));
+    return `<div class="mission-item">
+      <div class="m-icon" style="background:${m.bg}">${m.icon}</div>
+      <div class="m-body">
+        <div class="m-name">${m.name}</div>
+        <div class="m-prog">${m.curr} / ${m.max}</div>
+        <div class="m-bar"><div class="m-bar-fill" style="width:${pct}%;background:${done?'var(--green)':'var(--blue)'}"></div></div>
+      </div>
+      <div class="m-xp ${done?'done':'todo'}">${done?'✓':'+'} ${fmt(m.xp)} XP</div>
+    </div>`;
+  }).join('');
+}
+
+function renderWeeklyChallenge() {
+  document.getElementById('challengeName').textContent    = WEEKLY_CHALLENGE.name;
+  document.getElementById('challengeDesc').textContent    = WEEKLY_CHALLENGE.desc;
+  document.getElementById('challengeXP').textContent      = `+${WEEKLY_CHALLENGE.xp} XP`;
+  document.getElementById('challengeDeadline').textContent= WEEKLY_CHALLENGE.deadline;
+}
+
+function renderUniMini() {
+  const el = document.getElementById('uniMini');
+  if (!STATE.universities.length) { el.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">Încarcă CSV →</div>'; return; }
+  const medals = ['🥇','🥈','🥉'];
+  el.innerHTML = STATE.universities.slice(0,5).map((u,i) => `
+    <div class="lb-mini-row">
+      <div class="lb-rank">${medals[i]||i+1}</div>
+      <div class="lb-av" style="background:${u.color}">🎓</div>
+      <div class="lb-info">
+        <div class="lb-name">${u.name}</div>
+        <div class="lb-sub">${fmt(u.conturi)} conturi</div>
+      </div>
+      <div class="lb-xp">${fmt(u.xp)} XP</div>
+    </div>`).join('');
+}
+
+// ── LEADERBOARDS ──────────────────────────────────────
+function buildPodium(items, nameKey, subKey, xpKey, conturiKey, colorKey, avatarFn) {
+  const order = [items[1], items[0], items[2]];
+  const cls   = ['p2','p1','p3'];
+  const medal = ['🥈','🥇','🥉'];
+  const nums  = [2,1,3];
+  return order.map((item,i) => {
+    if (!item) return '';
+    const av    = avatarFn ? avatarFn(item) : ini(item[nameKey]);
+    const color = item[colorKey] || '#1A3FCB';
+    return `<div class="pod-slot ${cls[i]}">
+      <div class="pod-av" style="background:${color}">
+        ${nums[i]===1?'<span class="pod-crown">👑</span>':''}${av}
+      </div>
+      <div class="pod-name">${item[nameKey]}</div>
+      <div class="pod-sub">${item[subKey]||''}</div>
+      <div class="pod-xp">${fmt(item[xpKey])} XP</div>
+      <div class="pod-conturi">📂 ${fmt(item[conturiKey])}</div>
+      <div class="pod-block">${medal[i]}</div>
+    </div>`;
+  }).join('');
+}
+
+function buildList(items, nameKey, subKey, xpKey, conturiKey, colorKey, meTest, avatarFn) {
+  return items.slice(3).map((item,i) => {
+    const rank  = i + 4;
+    const isMe  = meTest(item);
+    const av    = avatarFn ? avatarFn(item) : ini(item[nameKey]);
+    const color = item[colorKey] || '#1A3FCB';
+    return `<div class="cls-row ${isMe?'me':''}">
+      <div class="cls-rank">${rank}</div>
+      <div class="cls-av" style="background:${color}">${av}</div>
+      <div class="cls-info">
+        <div class="cls-name">${item[nameKey]}${isMe?' <span class="me-tag">TU</span>':''}</div>
+        <div class="cls-sub">${item[subKey]||''}</div>
+      </div>
+      <div class="cls-right">
+        <div class="cls-xp">${fmt(item[xpKey])} XP</div>
+        <div class="cls-conturi">📂 ${fmt(item[conturiKey])}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderLeaderboard(podId, listId, items, nameKey, subKey, xpKey, conturiKey, colorKey, meTest, avatarFn) {
+  const pe = document.getElementById(podId);
+  const le = document.getElementById(listId);
+  if (!items.length) {
+    if (pe) pe.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">📂 Încarcă un CSV pentru date live</div>';
+    if (le) le.innerHTML = '';
+    return;
+  }
+  if (pe) pe.innerHTML = buildPodium(items, nameKey, subKey, xpKey, conturiKey, colorKey, avatarFn);
+  if (le) le.innerHTML = items.length > 3 ? buildList(items, nameKey, subKey, xpKey, conturiKey, colorKey, meTest, avatarFn) : '';
+}
+
+function renderLeaderboards() {
+  // Only permanent ambassadors compete in rankings
+  const leaderboardRows = processAmbassadors._leaderboardRows || STATE.ambassadors.filter(a => a._isPermanent);
+  const unis = STATE.universities;
+  const facs = STATE.faculties;
+  const myId = STATE.me?.ID_Ambasador;
+
+  // Students (permanent only) — conturi = proprii + retea afiliati
+  const studs = leaderboardRows.map(a => ({
+    name: a.Nickname || a.ID_Ambasador,
+    sub:  `${a.Universitate} · ${a.Facultate}`,
+    xp:   a._xp,
+    conturi: a._totalConturi || (parseInt(a.Total_Conturi_Generate)||0),
+    color: a._color,
+    id:   a.ID_Ambasador,
+  }));
+  renderLeaderboard('podium-studenti','list-studenti', studs,
+    'name','sub','xp','conturi','color', it => it.id===myId, null);
+
+  // Universities
+  renderLeaderboard('podium-universitati','list-universitati', unis,
+    'name','name','xp','conturi','color', ()=>false, ()=>'🎓');
+
+  // Faculties
+  renderLeaderboard('podium-facultati','list-facultati', facs,
+    'name','uni','xp','conturi','color', ()=>false, ()=>'🏫');
+}
+
+function setClsTab(tab) {
+  ['studenti','universitati','facultati'].forEach(t => {
+    document.getElementById('cls-'+t+'-view').style.display = t===tab?'':'none';
+  });
+  document.getElementById('clsTab1').className='cls-tab'+(tab==='studenti'?' active':'');
+  document.getElementById('clsTab2').className='cls-tab'+(tab==='universitati'?' active':'');
+  document.getElementById('clsTab3').className='cls-tab'+(tab==='facultati'?' active':'');
+}
+
+function renderProfile() {
+  const me = STATE.me;
+  if (!me) return;
+  const xp  = me._xp;
+  const lvl = getLevel(xp);
+
+  document.getElementById('profileAv').textContent   = ini(me.Nickname||me.ID_Ambasador);
+  document.getElementById('profileAv').style.background = me._color;
+  document.getElementById('profileNick').textContent  = me.Nickname || me.ID_Ambasador;
+  document.getElementById('profileLevel').textContent = `Level ${lvl+1} · ${LEVEL_NAMES[lvl]} · ${me.Tip}`;
+  document.getElementById('profXP').textContent       = fmt(xp);
+  const totalConturiProfile = me._isPermanent
+    ? (parseInt(me.Total_Conturi_Generate)||0) + me._affiliateConturi
+    : parseInt(me.Total_Conturi_Generate)||0;
+  document.getElementById('profConturi').textContent = totalConturiProfile;
+  document.getElementById('profRank').textContent     = me._isPermanent ? `#${me._rank}` : '—';
+
+  // Hide rank stat for temporary ambassadors
+  const rankStatEl = document.getElementById('profRank')?.closest('.profile-stat');
+  if (rankStatEl) rankStatEl.style.display = me._isPermanent ? '' : 'none';
+
+  document.getElementById('profileDetails').innerHTML = [
+    ['🆔 ID Ambasador', me.ID_Ambasador],
+    ['📧 Email', me.Email],
+    ['🎓 Universitate', me.Universitate],
+    ['🏫 Facultate', me.Facultate],
+    ['📅 An studiu', me.An_Studiu],
+    ['📅 Înscris', me.Data_Inscriere],
+    ['🔗 Link unic', `<span style="color:var(--blue);font-size:11px">${me.Link_Unic||'—'}</span>`],
+    ['🏷️ Tip', me.Tip],
+    ['📊 Status', me.Status],
+    // Affiliate network stats for permanent ambassadors
+    ...(me._isPermanent && me._affiliateCount > 0 ? [
+      ['👥 Afiliați coordonați', me._affiliateCount],
+      ['📂 Conturi generate de afiliați', me._affiliateConturi],
+    ] : []),
+  ].map(([l,v]) => `<div class="info-row"><div class="info-label">${l}</div><div class="info-value">${v||'—'}</div></div>`).join('');
+
+  const affLineProfile = me._isPermanent && me._affiliateCount > 0
+    ? `<div class="xp-breakdown-row"><span>🔗 XP retea afiliati (${me._affiliateCount} afiliati · ${me._affiliateConturi} conturi)</span><span>+${fmt(me._affiliateXP)} XP</span></div>`
+    : '';
+  const refLineProfile = me._refXP > 0
+    ? `<div class="xp-breakdown-row"><span>👥 Referrals Permanenti (${me._referrals})</span><span>+${fmt(me._refXP)} XP</span></div>`
+    : '';
+  document.getElementById('profileXPBreakdown').innerHTML = `
+    <div class="xp-breakdown-row"><span>📂 XP conturi proprii (${me.Total_Conturi_Generate})</span><span>${fmt(me._xpBase)} XP</span></div>
+    ${affLineProfile}
+    ${refLineProfile}
+    <div class="xp-breakdown-row"><span>🏆 Bonus saptamanal</span><span>+${fmt(me._weeklyBonus)} XP</span></div>
+    <div class="xp-breakdown-row"><span>⚡ TOTAL</span><span>${fmt(xp)} XP</span></div>`;
+}
+
+function renderAdminTable() {
+  const el = document.getElementById('xpTableBody');
+  const countEl = document.getElementById('ambassadorCount');
+  if (!el) return;
+
+  const allRows = processAmbassadors._allRows || STATE.ambassadors;
+  const leaderboardRows = processAmbassadors._leaderboardRows || STATE.ambassadors.filter(a => a._isPermanent);
+
+  countEl.textContent = `${leaderboardRows.length} permanenți · ${allRows.length - leaderboardRows.length} afiliați`;
+
+  // Show all rows; highlight temporaries differently
+  el.innerHTML = allRows.map((a,i) => {
+    const isPerm = a._isPermanent;
+    const tipBadge = isPerm
+      ? `<span class="mini-badge badge-green">Permanent</span>`
+      : `<span class="mini-badge badge-muted">Afiliat</span>`;
+    const rankCell = isPerm ? a._rank : '—';
+    const affiliateInfo = isPerm && a._affiliateCount > 0
+      ? `<span style="font-size:10px;color:var(--muted)">+${a._affiliateCount} afil.</span>`
+      : '';
+    const conturiTotal = isPerm
+      ? `${a.Total_Conturi_Generate} <span style="color:var(--muted);font-size:10px">(+${a._affiliateConturi} ret.)</span>`
+      : a.Total_Conturi_Generate;
+    const xpStyle = isPerm ? 'color:var(--blue)' : 'color:var(--muted)';
+    return `<tr class="${a.Email===STATE.loggedEmail?'me-row':''}" style="${!isPerm?'background:#FEFCE8;opacity:.8':''}">
+      <td>${rankCell}</td>
+      <td><strong>${a.Nickname||a.ID_Ambasador}</strong></td>
+      <td>${tipBadge}</td>
+      <td>${a.Facultate}</td>
+      <td>${conturiTotal}</td>
+      <td>${fmt(a._xpBase)}${isPerm && a._affiliateXP > 0 ? ` <span style="color:var(--green);font-size:10px">+${fmt(a._affiliateXP)}</span>` : ''}</td>
+      <td>${fmt(a._refXP)}</td>
+      <td>${fmt(a._weeklyBonus)}</td>
+      <td><strong style="${xpStyle}">${fmt(a._xp)}</strong></td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// CSV UPLOAD
+// ═══════════════════════════════════════════════════════
+// Reconstruieste STATE.ambassadors din cache-ul de ambasadori/membri + un nou sales.csv
+function rebuildFromSales(salesText) {
+  const salesRows = parseCSV(salesText);
+  if (!salesRows.length) { alert('sales.csv nu conține date valide.'); return; }
+  const salesMap = aggregateSales(salesRows);
+  STATE._rawSales = salesRows;
+
+  const people    = mergePeople(STATE._rawAmbassadors, STATE._rawMembers, salesMap);
+  const processed = processAmbassadors(people);
+  STATE.ambassadors  = processed;
+  STATE.universities = buildUniData(processed);
+  STATE.faculties    = buildFacData(processed);
+
+  if (STATE.loggedEmail) {
+    STATE.me = processed.find(a => a.Email && a.Email.toLowerCase() === STATE.loggedEmail) || null;
+    STATE.isAdmin = ADMIN_EMAILS.includes(STATE.loggedEmail);
+  }
+  renderAll();
+  const st = document.getElementById('uploadStatus');
+  if (st) {
+    const ambCount = (processAmbassadors._leaderboardRows||[]).length;
+    const memCount = processed.length - ambCount;
+    st.textContent = `✅ ${ambCount} ambasadori + ${memCount} membri · XP recalculat · Clasamente actualizate`;
+    st.style.display = 'block';
+    setTimeout(() => { st.style.display = 'none'; }, 5000);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const zone = document.getElementById('csvDropZone');
+  const inp  = document.getElementById('csv-file-input');
+  if (!zone || !inp) return;
+  zone.addEventListener('click', () => inp.click());
+  inp.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => rebuildFromSales(ev.target.result);
+    reader.readAsText(file);
+  });
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => rebuildFromSales(ev.target.result);
+    reader.readAsText(file);
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+function goTo(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.bn-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+pageId)?.classList.add('active');
+  document.getElementById('bn-'+pageId)?.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ═══════════════════════════════════════════════════════
+// TIMERS
+// ═══════════════════════════════════════════════════════
+function tickTimers() {
+  const now = new Date(), mid = new Date();
+  mid.setHours(24,0,0,0);
+  const d  = mid - now;
+  const hh = String(Math.floor(d/3600000)).padStart(2,'0');
+  const mm = String(Math.floor(d%3600000/60000)).padStart(2,'0');
+  const ss = String(Math.floor(d%60000/1000)).padStart(2,'0');
+  const el = document.getElementById('missionTimer');
+  if (el) el.textContent = `Resetează în ${hh}:${mm}:${ss}`;
+}
+setInterval(tickTimers, 1000);
+tickTimers();
+
+// ═══════════════════════════════════════════════════════
+// BOOT — încarcă automat ambassadors.csv + members.csv + sales.csv
+// ═══════════════════════════════════════════════════════
+(async function bootLoadCSV() {
+  const loginSub = document.querySelector('.login-sub');
+  const originalSubText = loginSub ? loginSub.textContent : '';
+  if (loginSub) loginSub.textContent = '⏳ Se încarcă datele...';
+
+  async function fetchCSV(name) {
+    const res = await fetch(name + '?t=' + Date.now()); // cache-bust
+    if (!res.ok) throw new Error(`${name}: HTTP ${res.status} ${res.statusText}`);
+    const text = await res.text();
+    if (!text || !text.trim()) throw new Error(`Fișierul ${name} este gol.`);
+    return parseCSV(text);
+  }
+
+  try {
+    const [ambRows, memRows, salesRows] = await Promise.all([
+      fetchCSV('ambassadors.csv'),
+      fetchCSV('members.csv'),
+      fetchCSV('sales.csv')
+    ]);
+
+    STATE._rawAmbassadors = ambRows;
+    STATE._rawMembers     = memRows;
+    STATE._rawSales       = salesRows;
+
+    const salesMap  = aggregateSales(salesRows);
+    const people    = mergePeople(ambRows, memRows, salesMap);
+    const processed = processAmbassadors(people);
+
+    STATE.ambassadors  = processed;
+    STATE.universities = buildUniData(processed);
+    STATE.faculties    = buildFacData(processed);
+
+    if (loginSub) loginSub.textContent = originalSubText;
+  } catch (err) {
+    console.error('[Boot] Nu s-au putut încărca CSV-urile:', err);
+    if (loginSub) {
+      loginSub.innerHTML = `⚠️ Eroare la încărcarea datelor: <strong>${err.message}</strong><br>
+        Asigură-te că <code>ambassadors.csv</code>, <code>members.csv</code> și <code>sales.csv</code>
+        există în același director cu <code>index.html</code>.`;
+      loginSub.style.color = '#FCA5A5';
+    }
+  }
+})();
+</script>
+</body>
+</html>
